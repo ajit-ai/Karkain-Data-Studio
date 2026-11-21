@@ -1,0 +1,83 @@
+// Round 2 self-contained tests for robust CSV operations.
+
+func test_header_validation() {
+    let header = "id,name,score,dept"
+    let cells = split(header, ",")
+    assert_eq(len(cells), 4)
+    assert_eq(cells[0], "id")
+    assert_eq(cells[3], "dept")
+    let dup = "id,name,id,dept"
+    let d = split(dup, ",")
+    let duplicate = 0
+    let a = 0
+    while (a < len(d)) {
+        let b = a + 1
+        while (b < len(d)) {
+            if (d[a] == d[b]) { duplicate = 1 }
+            b = b + 1
+        }
+        a = a + 1
+    }
+    assert_eq(duplicate, 1)
+    let mismatch = 0
+    if (len(split("1,alice,88", ",")) != len(cells)) { mismatch = 1 }
+    assert_eq(mismatch, 1)
+}
+
+func test_column_type_detection() {
+    let header = "id,name,score,dept"
+    let rows = "1,alice,88,eng;2,bob,72,sales"
+    let rl = split(rows, ";")
+    let out = ""
+    let c = 0
+    while (c < 4) {
+        let allnum = 1
+        let r = 0
+        while (r < len(rl)) {
+            let cells = split(rl[r], ",")
+            let t = trim(cells[c])
+            if (str(int(t)) != t) { allnum = 0 }
+            r = r + 1
+        }
+        if (c > 0) { out = out + "," }
+        if (allnum == 1) { out = out + "N" } else { out = out + "T" }
+        c = c + 1
+    }
+    assert_eq(out, "N,T,N,T")
+    assert_eq(str(int("88")), "88")
+    assert_eq(str(int("alice")), "0")
+}
+
+func test_where_filter_and_multi_step() {
+    let rows = "1,alice,88,eng;2,bob,72,sales;3,carol,95,eng;4,dave,61,sales;5,erin,80,eng"
+    let rl = split(rows, ";")
+    let view = ""
+    let matched = 0
+    let r = 0
+    while (r < len(rl)) {
+        let cells = split(rl[r], ",")
+        if (int(cells[2]) > 75) {
+            if (matched > 0) { view = view + ";" }
+            view = view + rl[r]
+            matched = matched + 1
+        }
+        r = r + 1
+    }
+    assert_eq(matched, 3)
+    let vr = split(view, ";")
+    assert_eq(vr[0], "1,alice,88,eng")
+    let next = ""
+    let k = 0
+    while (k < len(vr)) {
+        let cells = split(vr[k], ",")
+        cells[2] = str(int(cells[2]) * 1 + 5)
+        if (k > 0) { next = next + ";" }
+        next = next + cells[0] + "," + cells[1] + "," + cells[2] + "," + cells[3]
+        k = k + 1
+    }
+    let final = split(next, ";")
+    assert_eq(len(final), 3)
+    assert_eq(split(final[0], ",")[2], "93")
+    assert_eq(split(final[1], ",")[2], "100")
+    assert_eq(split(final[2], ",")[2], "85")
+}

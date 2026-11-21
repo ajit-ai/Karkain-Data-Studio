@@ -1,0 +1,17 @@
+LOAD2 sales rows=5 cols=4
+HEADER sales cols=4 names=id,name,score,dept valid=1
+TYPES sales N,T,N,T numeric=2 text=2
+WHERE sales col=2 op=GT value=75 matched=3
+VIEW sales rows=3
+VROW 1,alice,88,eng
+VROW 3,carol,95,eng
+VROW 5,erin,80,eng
+EXPORT_VIEW sales -> data/r2_view.csv rows=3
+STEP sales 2:MUL:1 rows=5
+STEP sales 2:ADD:5 rows=5
+WHERE sales col=2 op=GE value=85 matched=3
+VIEW sales rows=3
+VROW 1,alice,93,eng
+VROW 3,carol,100,eng
+VROW 5,erin,85,eng
+EXPORT_VIEW sales -> data/r2_view2.csv rows=3

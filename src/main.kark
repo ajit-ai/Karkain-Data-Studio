@@ -4,6 +4,7 @@
 // the dataset back to a delimited file. State is a set of pipe-delimited
 // records persisted to data/state.dat with a deterministic report in
 // data/report.dat. Builtins only; relative paths only.
+import robust_csv
 
 func find_dataset(state, name) {
     let i = 0
@@ -157,4 +158,5 @@ func main() {
     persist(state_path, state)
     persist(report_path, split(report, "\n"))
     print("DATA_STUDIO_OK datasets=" + str(len(state)))
+    robust_csv.r2_run()
 }

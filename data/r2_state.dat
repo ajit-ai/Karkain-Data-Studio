@@ -1,0 +1,1 @@
+sales|id,name,score,dept|N,T,N,T|1,alice,93,eng;2,bob,77,sales;3,carol,100,eng;4,dave,66,sales;5,erin,85,eng|1,alice,93,eng;3,carol,100,eng;5,erin,85,eng

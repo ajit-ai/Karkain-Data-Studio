@@ -1,0 +1,10 @@
+LOAD2|sales|data/sample2.csv
+HEADER|sales
+TYPES|sales
+WHERE|sales|2|GT|75
+VIEW|sales
+EXPORT_VIEW|sales|data/r2_view.csv
+MULTI|sales|2:MUL:1;2:ADD:5
+WHERE|sales|2|GE|85
+VIEW|sales
+EXPORT_VIEW|sales|data/r2_view2.csv
