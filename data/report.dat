@@ -1,0 +1,5 @@
+LOAD sales rows=3 cols=3
+INSPECT sales rows=3 cols=3
+TRANSFORM sales col=1 factor=2
+INSPECT sales rows=3 cols=3
+EXPORT sales -> data/exported.csv rows=3

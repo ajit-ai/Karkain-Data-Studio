@@ -1,0 +1,160 @@
+// Karkain Data Studio - first functional slice.
+// Batch delimited-data workspace: load a delimited dataset from a file,
+// inspect its shape, transform one numeric column by a factor, and export
+// the dataset back to a delimited file. State is a set of pipe-delimited
+// records persisted to data/state.dat with a deterministic report in
+// data/report.dat. Builtins only; relative paths only.
+
+func find_dataset(state, name) {
+    let i = 0
+    while (i < len(state)) {
+        let f = split(state[i], "|")
+        if (f[0] == name) { return state[i] }
+        i = i + 1
+    }
+    return ""
+}
+
+func put_dataset(state, name, rows, cols, data) {
+    let rec = name + "|" + str(rows) + "|" + str(cols) + "|" + data
+    let out = []
+    let j = 0
+    let replaced = 0
+    while (j < len(state)) {
+        let f = split(state[j], "|")
+        if (f[0] == name) { push(out, rec); replaced = 1 } else { push(out, state[j]) }
+        j = j + 1
+    }
+    if (replaced == 0) { push(out, rec) }
+    return out
+}
+
+// Reads a comma-delimited file and returns "rows|cols|data" where data is
+// rows separated by ';' and cells separated by ','.
+func read_dataset(file) {
+    let txt = readFile(file)
+    let lines = split(txt, "\n")
+    let data = ""
+    let rows = 0
+    let cols = 0
+    let i = 0
+    while (i < len(lines)) {
+        let line = trim(lines[i])
+        if (line != "") {
+            let cells = split(line, ",")
+            if (rows == 0) { cols = len(cells) }
+            let row = ""
+            let c = 0
+            while (c < len(cells)) {
+                if (c > 0) { row = row + "," }
+                row = row + trim(cells[c])
+                c = c + 1
+            }
+            if (rows > 0) { data = data + ";" }
+            data = data + row
+            rows = rows + 1
+        }
+        i = i + 1
+    }
+    if (rows == 0) { data = "EMPTY" }
+    return str(rows) + "|" + str(cols) + "|" + data
+}
+
+func persist(path, lines) {
+    let out = ""
+    let i = 0
+    while (i < len(lines)) {
+        out = out + lines[i] + "\n"
+        i = i + 1
+    }
+    writeFile(path, out)
+}
+
+func main() {
+    let cmd_path = "data/commands.dat"
+    let state_path = "data/state.dat"
+    let report_path = "data/report.dat"
+    let cmds = split(readFile(cmd_path), "\n")
+    let state = split(readFile(state_path), "\n")
+    let report = ""
+    let i = 0
+    while (i < len(cmds)) {
+        let line = trim(cmds[i])
+        if (line != "") {
+            let f = split(line, "|")
+            let op = f[0]
+            if (op == "LOAD") {
+                let body = read_dataset(f[2])
+                let b = split(body, "|")
+                state = put_dataset(state, f[1], int(b[0]), int(b[1]), b[2])
+                let msg = "LOAD " + f[1] + " rows=" + b[0] + " cols=" + b[1]
+                print(msg)
+                report = report + msg + "\n"
+            }
+            if (op == "INSPECT") {
+                let rec = find_dataset(state, f[1])
+                if (rec == "") {
+                    print("ERROR unknown dataset " + f[1])
+                } else {
+                    let d = split(rec, "|")
+                    let msg = "INSPECT " + f[1] + " rows=" + d[1] + " cols=" + d[2]
+                    print(msg)
+                    report = report + msg + "\n"
+                }
+            }
+            if (op == "TRANSFORM") {
+                let rec = find_dataset(state, f[1])
+                if (rec == "") {
+                    print("ERROR unknown dataset " + f[1])
+                } else {
+                    let d = split(rec, "|")
+                    let col = int(f[2])
+                    let factor = int(f[3])
+                    let rowsdata = split(d[3], ";")
+                    let newdata = ""
+                    let r = 0
+                    while (r < len(rowsdata)) {
+                        let cells = split(rowsdata[r], ",")
+                        let row = ""
+                        let c = 0
+                        while (c < len(cells)) {
+                            if (c > 0) { row = row + "," }
+                            if (c == col) { row = row + str(int(cells[c]) * factor) } else { row = row + cells[c] }
+                            c = c + 1
+                        }
+                        if (r > 0) { newdata = newdata + ";" }
+                        newdata = newdata + row
+                        r = r + 1
+                    }
+                    state = put_dataset(state, f[1], int(d[1]), int(d[2]), newdata)
+                    let msg = "TRANSFORM " + f[1] + " col=" + f[2] + " factor=" + f[3]
+                    print(msg)
+                    report = report + msg + "\n"
+                }
+            }
+            if (op == "EXPORT") {
+                let rec = find_dataset(state, f[1])
+                if (rec == "") {
+                    print("ERROR unknown dataset " + f[1])
+                } else {
+                    let d = split(rec, "|")
+                    let rowsdata = split(d[3], ";")
+                    let out = ""
+                    let r = 0
+                    while (r < len(rowsdata)) {
+                        out = out + rowsdata[r] + "\n"
+                        r = r + 1
+                    }
+                    writeFile(f[2], out)
+                    let msg = "EXPORT " + f[1] + " -> " + f[2] + " rows=" + d[1]
+                    print(msg)
+                    report = report + msg + "\n"
+                }
+            }
+        }
+        i = i + 1
+    }
+    persist(state_path, state)
+    persist(report_path, split(report, "\n"))
+    print("DATA_STUDIO_OK datasets=" + str(len(state)))
+}

@@ -1,0 +1,5 @@
+LOAD|sales|data/sample.csv
+INSPECT|sales
+TRANSFORM|sales|1|2
+INSPECT|sales
+EXPORT|sales|data/exported.csv
